@@ -62,6 +62,37 @@
   <strong>Other Use Case Options:</strong> The tool can be used without the email notifier. Just leave out the secrets, and the results will still be displayed in the GitHub Action execution log. As described in the fourth step "Test Your Setup," you can also always execute the workflow manually and are not bound to the scheduled time. The tool can also be used locally without GitHub Actions: for this, you need to have Python installed along with the packages listed in <code>requirements.txt</code>. Create a <code>.env</code> file in the root folder with the same credentials you used in your secrets. You can then execute the main file <code>daily_predictions.py</code>. If you have any further questions or encounter issues, please use the "Issues" tab at the top of the repository or contact me via the email listed on my GitHub profile.
 </div>
 
+<h2>Streamlit application</h2>
+
+<p>Start the interactive application locally from the repository root:</p>
+
+<pre><code>streamlit run streamlit_app.py</code></pre>
+
+<p>
+  Enter your Kickbase username and password in the login form. Credentials are used only for the active Streamlit session and are not written to a file or environment variable. After signing in, select one of your leagues and click <strong>Run Analysis</strong>. The manager budgets, market recommendations, and squad recommendations are shown in separate tabs.
+</p>
+
+<p>
+  The existing command-line workflow remains available with <code>python daily_predictions.py [h|m]</code> and still uses <code>KICK_USER</code> and <code>KICK_PASS</code> from the environment or a local <code>.env</code> file.
+</p>
+
+<h2>Deploy to Streamlit Community Cloud</h2>
+
+<ol>
+  <li>Push this repository to GitHub, including <code>streamlit_app.py</code> and <code>requirements.txt</code>.</li>
+  <li>Open <a href="https://share.streamlit.io" target="_blank" rel="noopener">Streamlit Community Cloud</a> and sign in with GitHub.</li>
+  <li>Select <strong>New app</strong>, choose the repository and branch, and set the main file to <code>streamlit_app.py</code>.</li>
+  <li>Click <strong>Deploy</strong>. Streamlit Cloud installs the packages listed in <code>requirements.txt</code>.</li>
+</ol>
+
+<p>
+  No Community Cloud secrets are required for the current app: users enter their Kickbase credentials in the login form, and the credentials are used only for that session. Do not upload the local <code>.env</code> file or add the password to Streamlit secrets.
+</p>
+
+<p>
+  The app refreshes player data and trains the model when <strong>Run Analysis</strong> is clicked. Community Cloud storage is ephemeral, so the local SQLite database should be treated as a runtime cache rather than permanent storage.
+</p>
+
 <h2 align="center">Future Work & Ideas</h2>
 <ul>
   <li>Three-day and one-week market predictions</li>
