@@ -52,6 +52,35 @@ def format_table(dataframe):
     )
 
 
+def render_player_alerts(dataframe):
+    change_column = "predicted_mv_target"
+    if change_column not in dataframe.columns:
+        return
+
+    changes = pd.to_numeric(dataframe[change_column], errors="coerce")
+    player_column = "last_name" if "last_name" in dataframe.columns else "player_id"
+    negative_players = dataframe.loc[changes < 0, [player_column, change_column]]
+    high_growth_players = dataframe.loc[
+        changes >= 300_000, [player_column, change_column]
+    ]
+
+    if not negative_players.empty:
+        st.markdown("#### Predicted value decrease warning")
+        for _, player in negative_players.iterrows():
+            st.error(
+                f"{player[player_column]}: "
+                f"{format_number(player[change_column])}"
+            )
+
+    if not high_growth_players.empty:
+        st.markdown("#### Strong predicted value increase")
+        for _, player in high_growth_players.iterrows():
+            st.success(
+                f"{player[player_column]}: "
+                f"+{format_number(player[change_column])}"
+            )
+
+
 background = "#09090b" if IS_DARK else "#ffffff"
 background_subtle = "#0c0c0f" if IS_DARK else "#f9fafb"
 card = "#0c0c0f" if IS_DARK else "#ffffff"
@@ -205,9 +234,11 @@ with tab_market:
         use_container_width=True,
         hide_index=True,
     )
+    render_player_alerts(results["market_recommendations"])
 with tab_squad:
     st.dataframe(
         format_table(results["squad_recommendations"]),
         use_container_width=True,
         hide_index=True,
     )
+    render_player_alerts(results["squad_recommendations"])
