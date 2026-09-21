@@ -37,12 +37,10 @@ def clear_session():
 
 
 def format_number(value):
-    """Format numeric table values with German-style separators."""
+    """Round numeric table values and format them with German separators."""
     if pd.isna(value):
         return ""
-    if float(value).is_integer():
-        return f"{value:,.0f}".replace(",", ".")
-    return f"{value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{value:,.0f}".replace(",", ".")
 
 
 def format_table(dataframe):
@@ -62,6 +60,66 @@ def default_display_table(dataframe):
     visible_columns = [column for column in columns if column in dataframe.columns]
     return dataframe[visible_columns]
 
+
+def update_select_all(table_key, row_count):
+    row_keys = [f"{table_key}_row_{row_index}" for row_index in range(row_count)]
+    st.session_state[f"{table_key}_select_all"] = all(
+        st.session_state.get(row_key, True) for row_key in row_keys
+    )
+
+
+def set_all_rows(table_key, row_count):
+    selected = st.session_state[f"{table_key}_select_all"]
+    for row_index in range(row_count):
+        st.session_state[f"{table_key}_row_{row_index}"] = selected
+
+
+def render_selectable_table(dataframe, table_key):
+    display_data = default_display_table(dataframe).reset_index(drop=True)
+    row_count = len(display_data)
+    select_all_key = f"{table_key}_select_all"
+
+    if select_all_key not in st.session_state:
+        st.session_state[select_all_key] = True
+
+    st.checkbox(
+        "Select all",
+        key=select_all_key,
+        on_change=set_all_rows,
+        args=(table_key, row_count),
+    )
+
+    selected_values = [
+        pd.to_numeric(row["predicted_mv_target"], errors="coerce")
+        for row_index, (_, row) in enumerate(display_data.iterrows())
+        if st.session_state.get(f"{table_key}_row_{row_index}", True)
+        and "predicted_mv_target" in row
+    ]
+    selected_sum = pd.Series(selected_values, dtype="float64").sum()
+    st.metric("Selected predicted MV change", format_number(selected_sum))
+
+    header_columns = st.columns([0.7, 3, 2, 2, 2])
+    header_columns[0].markdown("**Use**")
+    for column, header in zip(header_columns[1:], display_data.columns):
+        column.markdown(f"**{header}**")
+
+    for row_index, row in display_data.iterrows():
+        columns = st.columns([0.7, 3, 2, 2, 2])
+        selected = columns[0].checkbox(
+            "",
+            value=True,
+            key=f"{table_key}_row_{row_index}",
+            label_visibility="collapsed",
+            on_change=update_select_all,
+            args=(table_key, row_count),
+        )
+        for column, field in zip(columns[1:], display_data.columns):
+            value = row[field]
+            rendered_value = format_number(value) if pd.api.types.is_number(value) else value
+            column.write(rendered_value)
+
+        if selected and "predicted_mv_target" in row:
+            selected_values.append(pd.to_numeric(row["predicted_mv_target"], errors="coerce"))
 
 def render_player_alerts(dataframe):
     change_column = "predicted_mv_target"
@@ -240,16 +298,8 @@ with tab_budgets:
         hide_index=True,
     )
 with tab_market:
-    st.dataframe(
-        format_table(default_display_table(results["market_recommendations"])),
-        use_container_width=True,
-        hide_index=True,
-    )
+    render_selectable_table(results["market_recommendations"], "market")
     render_player_alerts(results["market_recommendations"])
 with tab_squad:
-    st.dataframe(
-        format_table(default_display_table(results["squad_recommendations"])),
-        use_container_width=True,
-        hide_index=True,
-    )
+    render_selectable_table(results["squad_recommendations"], "squad")
     render_player_alerts(results["squad_recommendations"])
