@@ -52,6 +52,17 @@ def format_table(dataframe):
     )
 
 
+def default_display_table(dataframe):
+    columns = [
+        "last_name",
+        "mv",
+        "predicted_mv_target",
+        "hours_to_exp",
+    ]
+    visible_columns = [column for column in columns if column in dataframe.columns]
+    return dataframe[visible_columns]
+
+
 def render_player_alerts(dataframe):
     change_column = "predicted_mv_target"
     if change_column not in dataframe.columns:
@@ -230,14 +241,14 @@ with tab_budgets:
     )
 with tab_market:
     st.dataframe(
-        format_table(results["market_recommendations"]),
+        format_table(default_display_table(results["market_recommendations"])),
         use_container_width=True,
         hide_index=True,
     )
     render_player_alerts(results["market_recommendations"])
 with tab_squad:
     st.dataframe(
-        format_table(results["squad_recommendations"]),
+        format_table(default_display_table(results["squad_recommendations"])),
         use_container_width=True,
         hide_index=True,
     )
