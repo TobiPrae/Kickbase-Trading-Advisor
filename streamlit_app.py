@@ -13,21 +13,12 @@ from kickbase_api.league import get_leagues_infos
 from kickbase_api.user import login
 
 
-if "theme" not in st.session_state:
-    st.session_state.theme = "light"
 if "token" not in st.session_state:
     st.session_state.token = None
 if "leagues" not in st.session_state:
     st.session_state.leagues = []
 if "results" not in st.session_state:
     st.session_state.results = None
-
-
-IS_DARK = st.session_state.theme == "dark"
-
-
-def toggle_theme():
-    st.session_state.theme = "dark" if IS_DARK is False else "light"
 
 
 def clear_session():
@@ -68,58 +59,107 @@ def update_select_all(table_key, row_count):
     )
 
 
-def set_all_rows(table_key, row_count):
-    selected = st.session_state[f"{table_key}_select_all"]
-    for row_index in range(row_count):
-        st.session_state[f"{table_key}_row_{row_index}"] = selected
+def set_all_rows(table_key, row_count, selected):
+    st.session_state[f"{table_key}_selection"] = {
+        row_index: selected for row_index in range(row_count)
+    }
+    st.session_state[f"{table_key}_editor_version"] = (
+        st.session_state.get(f"{table_key}_editor_version", 0) + 1
+    )
 
 
 def render_selectable_table(dataframe, table_key):
     display_data = default_display_table(dataframe).reset_index(drop=True)
     row_count = len(display_data)
-    select_all_key = f"{table_key}_select_all"
-
-    if select_all_key not in st.session_state:
-        st.session_state[select_all_key] = True
-
-    st.checkbox(
-        "Select all",
-        key=select_all_key,
-        on_change=set_all_rows,
-        args=(table_key, row_count),
+    selection_key = f"{table_key}_selection"
+    editor_version_key = f"{table_key}_editor_version"
+    signature_key = f"{table_key}_selection_signature"
+    signature = tuple(
+        tuple(str(value) for value in row)
+        for row in display_data.astype(str).itertuples(index=False, name=None)
     )
 
+    if st.session_state.get(signature_key) != signature:
+        st.session_state[selection_key] = {
+            row_index: True for row_index in range(row_count)
+        }
+        st.session_state[signature_key] = signature
+        st.session_state[editor_version_key] = (
+            st.session_state.get(editor_version_key, 0) + 1
+        )
+    if editor_version_key not in st.session_state:
+        st.session_state[editor_version_key] = 0
+
+    sum_column, count_column, average_column = st.columns(3)
+    sum_placeholder = sum_column.empty()
+    count_placeholder = count_column.empty()
+    average_placeholder = average_column.empty()
+
+    select_column, deselect_column = st.columns(2)
+    with select_column:
+        st.button(
+            "Select all",
+            key=f"{table_key}_select_all_button",
+            on_click=set_all_rows,
+            args=(table_key, row_count, True),
+            use_container_width=True,
+        )
+    with deselect_column:
+        st.button(
+            "Deselect all",
+            key=f"{table_key}_deselect_all_button",
+            on_click=set_all_rows,
+            args=(table_key, row_count, False),
+            use_container_width=True,
+        )
+
+    table_data = display_data.copy()
+    for column in table_data.select_dtypes(include="number").columns:
+        table_data[column] = table_data[column].map(format_number)
+    table_data.insert(
+        0,
+        "Use",
+        [
+            st.session_state[selection_key].get(row_index, True)
+            for row_index in range(row_count)
+        ],
+    )
+
+    editor_key = f"{table_key}_editor_{st.session_state[editor_version_key]}"
+    edited_data = st.data_editor(
+        table_data,
+        key=editor_key,
+        hide_index=True,
+        use_container_width=True,
+        disabled=[column for column in table_data.columns if column != "Use"],
+        column_config={
+            "Use": st.column_config.CheckboxColumn("Use", default=True),
+        },
+    )
+    st.session_state[selection_key] = {
+        row_index: bool(selected)
+        for row_index, selected in enumerate(edited_data["Use"])
+    }
     selected_values = [
         pd.to_numeric(row["predicted_mv_target"], errors="coerce")
         for row_index, (_, row) in enumerate(display_data.iterrows())
-        if st.session_state.get(f"{table_key}_row_{row_index}", True)
+        if st.session_state[selection_key].get(row_index, True)
         and "predicted_mv_target" in row
     ]
-    selected_sum = pd.Series(selected_values, dtype="float64").sum()
-    st.metric("Selected predicted MV change", format_number(selected_sum))
-
-    header_columns = st.columns([0.7, 3, 2, 2, 2])
-    header_columns[0].markdown("**Use**")
-    for column, header in zip(header_columns[1:], display_data.columns):
-        column.markdown(f"**{header}**")
-
-    for row_index, row in display_data.iterrows():
-        columns = st.columns([0.7, 3, 2, 2, 2])
-        selected = columns[0].checkbox(
-            "",
-            value=True,
-            key=f"{table_key}_row_{row_index}",
-            label_visibility="collapsed",
-            on_change=update_select_all,
-            args=(table_key, row_count),
-        )
-        for column, field in zip(columns[1:], display_data.columns):
-            value = row[field]
-            rendered_value = format_number(value) if pd.api.types.is_number(value) else value
-            column.write(rendered_value)
-
-        if selected and "predicted_mv_target" in row:
-            selected_values.append(pd.to_numeric(row["predicted_mv_target"], errors="coerce"))
+    selected_series = pd.Series(selected_values, dtype="float64")
+    selected_sum = selected_series.sum()
+    selected_average = selected_series.mean()
+    if pd.isna(selected_average):
+        selected_average = 0
+    selected_count = sum(
+        st.session_state[selection_key].get(row_index, True)
+        for row_index in range(row_count)
+    )
+    sum_placeholder.metric("Selected predicted MV change", format_number(selected_sum))
+    count_placeholder.metric("Selected players", selected_count)
+    average_placeholder.metric(
+        "Average predicted MV change", format_number(selected_average)
+    )
 
 def render_player_alerts(dataframe):
     change_column = "predicted_mv_target"
@@ -150,12 +190,12 @@ def render_player_alerts(dataframe):
             )
 
 
-background = "#09090b" if IS_DARK else "#ffffff"
-background_subtle = "#0c0c0f" if IS_DARK else "#f9fafb"
-card = "#0c0c0f" if IS_DARK else "#ffffff"
-border = "#1e1e24" if IS_DARK else "#e4e4e7"
-text = "#fafafa" if IS_DARK else "#09090b"
-muted = "#a1a1aa" if IS_DARK else "#71717a"
+background = "#ffffff"
+background_subtle = "#f9fafb"
+card = "#ffffff"
+border = "#e4e4e7"
+text = "#09090b"
+muted = "#71717a"
 
 st.markdown(
     f"""
@@ -191,14 +231,29 @@ st.markdown(
     button[data-baseweb="tab"] {{ color: var(--muted) !important; }}
     button[data-baseweb="tab"][aria-selected="true"] {{ color: var(--text) !important; }}
     [data-testid="stDataFrame"] {{ border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }}
+    [data-testid="stVerticalBlockBorderWrapper"] {{
+        background: var(--card);
+        border-color: var(--border) !important;
+    }}
+    @media (max-width: 640px) {{
+        .block-container {{ padding: 1rem 0.75rem 2rem; }}
+        .brand {{ align-items: flex-start; flex-direction: column; gap: 0.15rem; }}
+        .brand-name {{ font-size: 1.65rem; }}
+        .brand-mark {{ font-size: 0.68rem; }}
+        .subtitle {{ font-size: 0.85rem; margin-bottom: 1rem; }}
+        h1, h2, h3 {{ overflow-wrap: anywhere; }}
+        [data-testid="stHorizontalBlock"] {{ gap: 0.5rem; }}
+        [data-testid="stVerticalBlockBorderWrapper"] {{ padding: 0.75rem !important; }}
+        [data-testid="stMetricValue"] {{ font-size: 1.25rem; }}
+        button[data-baseweb="tab"] {{ padding: 0.45rem 0.5rem !important; font-size: 0.75rem !important; }}
+    }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
 
-header_left, header_right = st.columns([8, 1])
-with header_left:
+with st.container():
     st.markdown(
         '<div class="brand"><span class="brand-name">KickAdvisor</span>'
         '<span class="brand-mark">DAILY PREDICTIONS</span></div>',
@@ -208,8 +263,6 @@ with header_left:
         '<div class="subtitle">Market value signals and squad recommendations for your Kickbase league.</div>',
         unsafe_allow_html=True,
     )
-with header_right:
-    st.button("Dark mode" if not IS_DARK else "Light mode", on_click=toggle_theme)
 
 
 if not st.session_state.token:
@@ -276,16 +329,16 @@ if results is None:
     st.stop()
 
 
-st.subheader("Model evaluation")
-metric_columns = st.columns(4)
-for column, (label, value) in zip(metric_columns, results["metrics"].items()):
-    formatted_value = f"{value:.2f}%" if label == "Signs correct" else f"{value:,.2f}"
-    with column:
-        st.markdown(
-            f'<div class="panel"><div class="metric-label">{label}</div>'
-            f'<div class="metric-value">{formatted_value}</div></div>',
-            unsafe_allow_html=True,
-        )
+with st.expander("Model evaluation", expanded=False):
+    metric_columns = st.columns(4)
+    for column, (label, value) in zip(metric_columns, results["metrics"].items()):
+        formatted_value = f"{value:.2f}%" if label == "Signs correct" else f"{value:,.2f}"
+        with column:
+            st.markdown(
+                f'<div class="panel"><div class="metric-label">{label}</div>'
+                f'<div class="metric-value">{formatted_value}</div></div>',
+                unsafe_allow_html=True,
+            )
 
 st.subheader("Recommendations")
 tab_budgets, tab_market, tab_squad = st.tabs(
