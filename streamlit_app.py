@@ -215,6 +215,8 @@ st.markdown(
         --danger-soft: #fef3f2;
         --success: #087443;
         --success-soft: #ecfdf3;
+            --focus: #5b8def;
+            --shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
     }}
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"],
     .main, .block-container, section[data-testid="stMain"] {{
@@ -222,6 +224,8 @@ st.markdown(
         color: var(--text) !important;
         font-family: 'DM Sans', sans-serif !important;
     }}
+    h1, h2, h3, h4, p, label, [data-testid="stMarkdownContainer"] {{ color: var(--text); }}
+    [data-testid="stCaptionContainer"] {{ color: var(--muted) !important; }}
     .block-container {{ max-width: 1360px; padding: 2rem 2.5rem 3rem; }}
     header[data-testid="stHeader"], #MainMenu, footer, [data-testid="stToolbar"],
     [data-testid="stDecoration"], [data-testid="stStatusWidget"], .stDeployButton {{
@@ -255,6 +259,11 @@ st.markdown(
         background: var(--accent-hover) !important;
         color: #ffffff !important;
     }}
+    [data-testid="stButton"] button:focus, [data-testid="stFormSubmitButton"] button:focus,
+    [data-baseweb="input"]:focus-within, [data-baseweb="select"]:focus-within {{
+        border-color: var(--focus) !important;
+        box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.18) !important;
+    }}
     [data-baseweb="input"], [data-baseweb="select"] > div {{
         background: var(--card) !important;
         border-color: var(--border) !important;
@@ -262,11 +271,67 @@ st.markdown(
     }}
     [data-baseweb="input"] input, [data-baseweb="select"] input {{ color: var(--text) !important; }}
     [data-baseweb="select"] * {{ color: var(--text) !important; }}
-    button[data-baseweb="tab"] {{ color: var(--muted) !important; }}
-    button[data-baseweb="tab"][aria-selected="true"] {{ color: var(--text) !important; }}
-    [data-testid="stAlert"] {{ color: var(--text) !important; }}
+    [data-baseweb="select"] svg {{ fill: var(--muted) !important; color: var(--muted) !important; }}
+    [data-baseweb="popover"], [data-baseweb="menu"] {{
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: var(--shadow) !important;
+    }}
+    [role="option"] {{ background: var(--card) !important; color: var(--text) !important; }}
+    [role="option"]:hover, [role="option"][aria-selected="true"] {{
+        background: var(--accent-soft) !important;
+        color: var(--accent-hover) !important;
+    }}
+    [data-baseweb="tab-list"] {{
+        background: var(--bg-subtle) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 9px !important;
+        gap: 4px !important;
+        padding: 4px !important;
+    }}
+    [data-baseweb="tab-border"], [data-baseweb="tab-highlight"] {{ display: none !important; }}
+    button[data-baseweb="tab"] {{
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 6px !important;
+        color: var(--muted) !important;
+        font-weight: 600 !important;
+    }}
+    button[data-baseweb="tab"] *, button[data-baseweb="tab"] svg {{ color: inherit !important; fill: currentColor !important; }}
+    button[data-baseweb="tab"]:hover {{
+        background: var(--accent-soft) !important;
+        color: var(--accent-hover) !important;
+    }}
+    button[data-baseweb="tab"][aria-selected="true"] {{
+        background: var(--card) !important;
+        border-color: var(--border) !important;
+        box-shadow: 0 1px 3px rgba(23, 32, 51, 0.08) !important;
+        color: var(--accent-hover) !important;
+    }}
+    [data-testid="stExpander"] {{
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 9px !important;
+    }}
+    [data-testid="stExpander"] summary, [data-testid="stExpander"] summary p {{
+        color: var(--text) !important;
+        font-weight: 600 !important;
+    }}
+    [data-testid="stAlert"] {{
+        color: var(--text) !important;
+        border-radius: 8px !important;
+    }}
+    [data-testid="stAlert"] svg {{ color: currentColor !important; fill: currentColor !important; }}
+    [data-testid="stCheckbox"] label, [data-testid="stCheckbox"] label p {{ color: var(--text) !important; }}
+    [data-testid="stCheckbox"] span {{ border-color: var(--border) !important; }}
     [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{ color: var(--text) !important; }}
     [data-testid="stDataFrame"] {{ border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }}
+    [data-testid="stDataEditor"] {{
+        background: var(--card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        color: var(--text) !important;
+    }}
     [data-testid="stVerticalBlockBorderWrapper"] {{
         background: var(--card);
         border-color: var(--border) !important;
