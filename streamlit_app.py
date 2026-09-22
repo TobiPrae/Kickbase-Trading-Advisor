@@ -190,12 +190,12 @@ def render_player_alerts(dataframe):
             )
 
 
-background = "#ffffff"
-background_subtle = "#f9fafb"
+background = "#f3f6fa"
+background_subtle = "#e9eff6"
 card = "#ffffff"
-border = "#e4e4e7"
-text = "#09090b"
-muted = "#71717a"
+border = "#d5dee9"
+text = "#172033"
+muted = "#5d6b7e"
 
 st.markdown(
     f"""
@@ -208,7 +208,13 @@ st.markdown(
         --border: {border};
         --text: {text};
         --muted: {muted};
-        --accent: #2563eb;
+        --accent: #0f766e;
+        --accent-hover: #115e59;
+        --accent-soft: #d9f1ed;
+        --danger: #b42318;
+        --danger-soft: #fef3f2;
+        --success: #087443;
+        --success-soft: #ecfdf3;
     }}
     html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"],
     .main, .block-container, section[data-testid="stMain"] {{
@@ -228,8 +234,38 @@ st.markdown(
     .panel {{ background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }}
     .metric-label {{ color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }}
     .metric-value {{ color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; font-weight: 600; margin-top: 0.35rem; }}
+    [data-testid="stButton"] button, [data-testid="stFormSubmitButton"] button {{
+        background: var(--card) !important;
+        color: var(--text) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 7px !important;
+        font-weight: 600 !important;
+    }}
+    [data-testid="stButton"] button:hover, [data-testid="stFormSubmitButton"] button:hover {{
+        background: var(--accent-soft) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent-hover) !important;
+    }}
+    [data-testid="stButton"] button[kind="primary"], [data-testid="stFormSubmitButton"] button[kind="primary"] {{
+        background: var(--accent) !important;
+        border-color: var(--accent) !important;
+        color: #ffffff !important;
+    }}
+    [data-testid="stButton"] button[kind="primary"]:hover, [data-testid="stFormSubmitButton"] button[kind="primary"]:hover {{
+        background: var(--accent-hover) !important;
+        color: #ffffff !important;
+    }}
+    [data-baseweb="input"], [data-baseweb="select"] > div {{
+        background: var(--card) !important;
+        border-color: var(--border) !important;
+        color: var(--text) !important;
+    }}
+    [data-baseweb="input"] input, [data-baseweb="select"] input {{ color: var(--text) !important; }}
+    [data-baseweb="select"] * {{ color: var(--text) !important; }}
     button[data-baseweb="tab"] {{ color: var(--muted) !important; }}
     button[data-baseweb="tab"][aria-selected="true"] {{ color: var(--text) !important; }}
+    [data-testid="stAlert"] {{ color: var(--text) !important; }}
+    [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {{ color: var(--text) !important; }}
     [data-testid="stDataFrame"] {{ border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }}
     [data-testid="stVerticalBlockBorderWrapper"] {{
         background: var(--card);
